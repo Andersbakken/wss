@@ -86,7 +86,7 @@ server.on('connection', function(conn) {
             return ret;
         }
         var dateString = toString(date.getUTCHours()) + ":" + toString(date.getUTCMinutes()) + ":" + toString(date.getSeconds());
-        console.log(dateString, JSON.stringify(msg, null, 4));
+        console.log(dateString, msg);
     });
 });
 
