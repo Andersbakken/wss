@@ -4,14 +4,25 @@ var ws = require('ws');
 var minimist = require('minimist');
 
 var minimistOptions = {
-    alias: { p: 'port', v: 'verbose' },
+    alias: { p: 'port', v: 'verbose', h: 'help' },
     default: { p: 8888 }
 };
+
+function showHelp(func)
+{
+    var usageString = ('Usage:\n$0 [...options...]\n' +
+                       '  -h|--help              Display help\n' +
+                       '  -v|--verbose           Be verbose\n' +
+                       '  -p|--port [port]       Use this port (default ' + minimistOptions.default.p + ')');
+
+    func(usageString.replace('$0', __filename));
+}
 
 var args = minimist(process.argv, minimistOptions);
 (function() {
     if (args._.length > 2) {
         console.error("Unknown arguments:", args._.slice(2).join(" "));
+        showHelp(console.error);
         process.exit(1);
     }
 
@@ -25,14 +36,21 @@ var args = minimist(process.argv, minimistOptions);
     for (arg in args) {
         if (arg != '_' && args.hasOwnProperty(arg) && !validArgs[arg]) {
             console.error('Unrecognized argument ' + arg);
+            showHelp(console.error);
             process.exit(1);
         }
     }
     if (typeof args.port !== 'number') {
         console.error('Invalid --port argument');
+        showHelp(console.error);
         process.exit(1);
     }
 })();
+
+if (args.help) {
+    showHelp(console.log);
+    process.exit(0);
+}
 
 function log()
 {
