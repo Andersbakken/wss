@@ -78,6 +78,14 @@ server.on('connection', function(conn) {
         connections.splice(idx, 1);
     });
     conn.on('message', function(msg) {
+        try {
+            var object = JSON.parse(msg);
+            if (object instanceof Object && object.type === 'evalResponse') {
+                console.log("  =>", object.result);
+                return;
+            }
+        } catch (err) {
+        }
         var date = new Date(new Date - start);
         function toString(int) {
             var ret = "" + int;
@@ -106,13 +114,15 @@ process.stdin.setEncoding('utf8');
 var pendingStdIn = '';
 var needEnd = false;
 function sendCommand(command) {
-    logVerbose("Sending command", ("'" + command + "'"));
-    if (!connections.length) {
-        log("No connections...");
-        return;
-    }
-    for (var i=0; i<connections.length; ++i) {
-        connections[i].send(command);
+    if (command) {
+        logVerbose("Sending command", ("'" + command + "'"));
+        if (!connections.length) {
+            log("No connections...");
+            return;
+        }
+        for (var i=0; i<connections.length; ++i) {
+            connections[i].send(command);
+        }
     }
 }
 process.stdin.on('readable', function() {
@@ -143,4 +153,3 @@ process.stdin.on('readable', function() {
         }
     }
 });
-
