@@ -120,8 +120,16 @@ function sendCommand(command) {
             log("No connections...");
             return;
         }
+        var msg;
+        if (command === "/log on") {
+            msg = JSON.stringify({logsEnabled: true });
+        } else if (command === "/log off") {
+            msg = JSON.stringify({logsEnabled: false });
+        } else {
+            msg = JSON.stringify({ eval: command });
+        }
         for (var i=0; i<connections.length; ++i) {
-            connections[i].send(command);
+            connections[i].send(msg);
         }
     }
 }
