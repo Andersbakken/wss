@@ -2,9 +2,10 @@
 
 var ws = require('ws');
 var minimist = require('minimist');
+var fs = require('fs');
 
 var minimistOptions = {
-    alias: { p: 'port', v: 'verbose', h: 'help' },
+    alias: { p: 'port', v: 'verbose', h: 'help', l: 'logfile' },
     default: { p: 8888 }
 };
 
@@ -13,6 +14,7 @@ function showHelp(func)
     var usageString = ('Usage:\n$0 [...options...]\n' +
                        '  -h|--help              Display help\n' +
                        '  -v|--verbose           Be verbose\n' +
+                       '  -l|--logfile [file]    Log file\n' +
                        '  -p|--port [port]       Use this port (default ' + minimistOptions.default.p + ')');
 
     func(usageString.replace('$0', __filename));
@@ -52,9 +54,35 @@ if (args.help) {
     process.exit(0);
 }
 
+var logFile;
+if (args.logfile) {
+    logFile = fs.openSync(args.logfile, 'w');
+    if (!logFile) {
+        console.error("Can't open", args.logFile, "for writing");
+        process.exit(1);
+    }
+}
+
 function log()
 {
     console.log.apply(console, arguments);
+    if (logFile) {
+        var str = "";
+        for (var i=0; i<arguments.length; ++i) {
+            var arg = arguments[i];
+            if (str.length)
+                str += ", ";
+            try {
+                str += JSON.stringify(arg, null, 4);
+            } catch (err) {
+                str += arg;
+            }
+        }
+        if (str) {
+            str += "\n";
+            fs.writeSync(logFile, new Buffer(str), 0, str.length);
+        }
+    }
 }
 
 function logVerbose()
@@ -81,7 +109,7 @@ server.on('connection', function(conn) {
         try {
             var object = JSON.parse(msg);
             if (object instanceof Object && object.type === 'evalResponse') {
-                console.log("  =>", object.result);
+                log("  =>", object.result);
                 return;
             }
         } catch (err) {
@@ -94,7 +122,7 @@ server.on('connection', function(conn) {
             return ret;
         }
         var dateString = toString(date.getUTCHours()) + ":" + toString(date.getUTCMinutes()) + ":" + toString(date.getSeconds());
-        console.log(dateString, msg);
+        log(dateString, msg);
     });
 });
 
