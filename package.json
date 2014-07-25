@@ -1,0 +1,28 @@
+{
+  "name": "wss",
+  "version": "0.0.1",
+  "description": "wss ===",
+  "main": "wss.js",
+  "dependencies": {
+    "minimist": "^0.2.0",
+    "ws": "^0.4.31"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Andersbakken/wss.git"
+  },
+  "keywords": [
+    "Websocket",
+    "server"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Andersbakken/wss/issues"
+  },
+  "homepage": "https://github.com/Andersbakken/wss"
+}
