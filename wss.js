@@ -5,7 +5,7 @@ var minimist = require('minimist');
 var fs = require('fs');
 
 var minimistOptions = {
-    alias: { p: 'port', v: 'verbose', h: 'help', l: 'logfile' },
+    alias: { p: 'port', v: 'verbose', h: 'help', l: 'logfile', r: 'relative-time' },
     default: { p: 8888 }
 };
 
@@ -15,6 +15,7 @@ function showHelp(func)
                        '  -h|--help              Display help\n' +
                        '  -v|--verbose           Be verbose\n' +
                        '  -l|--logfile [file]    Log file\n' +
+                       '  -r|--relative-time     Log with relative times\n' +
                        '  -p|--port [port]       Use this port (default ' + minimistOptions.default.p + ')');
 
     func(usageString.replace('$0', __filename));
@@ -114,14 +115,19 @@ server.on('connection', function(conn) {
             }
         } catch (err) {
         }
-        var date = new Date(new Date - start);
-        function toString(int) {
+        var date = args['relative-time'] ? new Date(new Date - start) : new Date;
+        function toString(int, len) {
             var ret = "" + int;
-            if (ret.length < 2)
-                ret = "0" + ret;
-            return ret;
+            var pad = '';
+            for (var i=len - ret.length; i>0; --i)
+                pad += '0';
+            return pad + ret;
         }
-        var dateString = toString(date.getUTCHours()) + ":" + toString(date.getUTCMinutes()) + ":" + toString(date.getSeconds());
+
+        var dateString = (toString(date.getHours(), 2)
+                          + ":" + toString(date.getMinutes(), 2)
+                          + ":" + toString(date.getSeconds(), 2)
+                          + "." + toString(date.getMilliseconds(), 3));
         log(dateString, msg);
     });
 });
