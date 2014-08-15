@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+/*global __filename, process, require, Buffer */
+
 var ws = require('ws');
 var minimist = require('minimist');
 var fs = require('fs');
@@ -73,15 +75,21 @@ function log()
             var arg = arguments[i];
             if (str.length)
                 str += ", ";
-            try {
-                str += JSON.stringify(arg, null, 4);
-            } catch (err) {
+            if (arg instanceof Object && !arg instanceof Function) {
+                try {
+                    str += JSON.stringify(arg, null, 4);
+                } catch (err) {
+                    str += arg;
+                }
+            } else {
                 str += arg;
             }
         }
         if (str) {
-            str += "\n";
-            fs.writeSync(logFile, new Buffer(str), 0, str.length);
+            if (str[str.length - 1] != '\n')
+                str += '\n';
+            var buf = new Buffer(str);
+            fs.writeSync(logFile, buf, 0, buf.length);
         }
     }
 }
@@ -98,6 +106,7 @@ logVerbose("Listening on port", args.port);
 
 var start = new Date();
 var connections = [];
+var relativeTime = args['relative-time'];
 server.on('connection', function(conn) {
     logVerbose("Got a connection");
     connections.push(conn);
@@ -115,7 +124,6 @@ server.on('connection', function(conn) {
             }
         } catch (err) {
         }
-        var date = args['relative-time'] ? new Date(new Date - start) : new Date;
         function toString(int, len) {
             var ret = "" + int;
             var pad = '';
@@ -124,10 +132,20 @@ server.on('connection', function(conn) {
             return pad + ret;
         }
 
-        var dateString = (toString(date.getHours(), 2)
+        var dateString, date;
+        if (relativeTime) {
+            date = new Date(new Date - start);
+            dateString = (toString(date.getUTCHours(), 2)
                           + ":" + toString(date.getMinutes(), 2)
                           + ":" + toString(date.getSeconds(), 2)
                           + "." + toString(date.getMilliseconds(), 3));
+        } else {
+            date = new Date;
+            dateString = (toString(date.getHours(), 2)
+                          + ":" + toString(date.getMinutes(), 2)
+                          + ":" + toString(date.getSeconds(), 2)
+                          + "." + toString(date.getMilliseconds(), 3));
+        }
         log(dateString, msg);
     });
 });
@@ -167,6 +185,7 @@ function sendCommand(command) {
         }
     }
 }
+
 process.stdin.on('readable', function() {
     var read = process.stdin.read();
     if (read) {
