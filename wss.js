@@ -3,11 +3,15 @@
 /*global __filename, process, require, Buffer */
 
 var ws = require('ws');
+var fs = require('fs');
+var express = require('express');
 var minimist = require('minimist');
 var fs = require('fs');
+var https = require('https');
+var http = require('http');
 
 var minimistOptions = {
-    alias: { p: 'port', v: 'verbose', h: 'help', l: 'logfile', r: 'relative-time' },
+    alias: { p: 'port', v: 'verbose', h: 'help', 'c': 'cert', 'k': 'private-key', r: 'relative-time' },
     default: { p: 8888 }
 };
 
@@ -18,8 +22,9 @@ function showHelp(func)
                        '  -v|--verbose           Be verbose\n' +
                        '  -l|--logfile [file]    Log file\n' +
                        '  -r|--relative-time     Log with relative times\n' +
-                       '  -p|--port [port]       Use this port (default ' + minimistOptions.default.p + ')');
-
+                       '  -c|--cert [file]        Cert (implies wss)\n' +
+                       '  -k|--private-key [file] Private key (implies wss)\n' +
+                       '  -p|--port [port]        Use this port (default ' + minimistOptions.default.p + ')');
     func(usageString.replace('$0', __filename));
 }
 
@@ -47,6 +52,11 @@ var args = minimist(process.argv, minimistOptions);
     }
     if (typeof args.port !== 'number') {
         console.error('Invalid --port argument');
+        showHelp(console.error);
+        process.exit(1);
+    }
+    if (args.hasOwnProperty('cert') != args.hasOwnProperty('private-key')) {
+        console.error('--cert also requires --private-key and vice versa');
         showHelp(console.error);
         process.exit(1);
     }
@@ -100,7 +110,33 @@ function logVerbose()
         log.apply(this, arguments);
 }
 
-var server = new ws.Server({ port: args.port });
+var webServer;
+if (args.cert) {
+    console.error("SHIT " + args.cert + " " + args['private-key']);
+    var privateKey  = fs.readFileSync(args['private-key'], 'utf8');
+    var certificate = fs.readFileSync(args.cert, 'utf8');
+    // console.log(privateKey);
+    // console.log(certificate);
+    if (!privateKey) {
+        console.error("Can't read " + args['private-key']);
+        process.exit(1);
+    } else if (!certificate) {
+        console.error("Can't read " + args.key);
+        process.exit(1);
+    }
+
+    var credentials = { key: privateKey, cert: certificate };
+
+    //... bunch of other express stuff here ...
+
+    //pass in your express app and credentials to create an https server
+    webServer = https.createServer(credentials); //, function(stuff, stuff2) { stuff2.end("foobar"); });
+} else {
+    webServer = http.createServer();
+}
+webServer.listen(args.port);
+
+var server = new ws.Server({server: webServer});
 
 logVerbose("Listening on port", args.port);
 
@@ -147,6 +183,7 @@ server.on('connection', function(conn) {
                           + "." + toString(date.getMilliseconds(), 3));
         }
         log(dateString, msg);
+        console.log(dateString, msg);
     });
 });
 
@@ -159,8 +196,6 @@ server.on('close', function(ev) {
     console.error("Got closed", ev);
     process.exit(3);
 });
-
-
 
 process.stdin.setEncoding('utf8');
 var pendingStdIn = '';
