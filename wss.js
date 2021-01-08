@@ -197,12 +197,11 @@ server.on('close', function(ev) {
     process.exit(3);
 });
 
-process.stdin.setEncoding('utf8');
-var pendingStdIn = '';
-var needEnd = false;
+
+
 function sendCommand(command) {
     if (command) {
-        logVerbose("Sending command", ("'" + command + "'"));
+        logVerbose("Sending command", "'" + command + "'");
         if (!connections.length) {
             log("No connections...");
             return;
@@ -212,40 +211,27 @@ function sendCommand(command) {
             msg = JSON.stringify({ logsEnabled: true });
         } else if (command === "/log off") {
             msg = JSON.stringify({ logsEnabled: false });
+        } else if (command === "/close") {
+            connections.forEach((conn) => {
+                conn.close(1010, "closing time!");
+            });
         } else {
             msg = JSON.stringify({ eval: command });
         }
-        for (var i=0; i<connections.length; ++i) {
-            connections[i].send(msg);
+        if (msg) {
+            connections.forEach(conn => conn.send(msg));
         }
     }
 }
 
-process.stdin.on('readable', function() {
-    var read = process.stdin.read();
-    if (read) {
-        if (!pendingStdIn) {
-            if (read.lastIndexOf('<code>', 0) === 0) {
-                needEnd = true;
-                read = read.substr(6);
-            }
-        }
-        pendingStdIn += read;
-        if (needEnd) {
-            var idx = pendingStdIn.indexOf("</code>");
-            if (idx !== -1) {
-                sendCommand(pendingStdIn.substr(0, idx));
-                pendingStdIn = pendingStdIn.substr(idx + 7);
-                needEnd = false;
-            }
-        } else {
-            var lines = pendingStdIn.split('\n');
-            if (lines.length > 1) {
-                for (var i=0; i<lines.length - 1; ++i) {
-                    sendCommand(lines[i]);
-                }
-                pendingStdIn = lines[lines.length - 1] || '';
-            }
-        }
-    }
+let buff = "";
+
+process.stdin.on("data", (data) => {
+    buff += data;
+    const lines = buff.split(/[\r\n|\n]/);
+    buff = lines.pop();
+    lines.forEach(sendCommand);
+}).on("end", () => {
+    if (buff.length > 0)
+        sendCommand(buff);
 });
