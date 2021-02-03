@@ -4,8 +4,9 @@
   "description": "wss ===",
   "main": "wss.js",
   "dependencies": {
-    "minimist": "^0.2.0",
-    "ws": "^0.4.31"
+    "express": "^4.17.1",
+    "minimist": "^0.2.1",
+    "ws": "^7.4.3"
   },
   "devDependencies": {},
   "scripts": {
