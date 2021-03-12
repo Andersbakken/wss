@@ -215,8 +215,10 @@ function sendCommand(command) {
             connections.forEach((conn) => {
                 conn.close(1010, "closing time!");
             });
+        } else if (command.lastIndexOf("/binary", 0) === 0) {
+            msg = Buffer.from(command);
         } else {
-            msg = JSON.stringify({ eval: command });
+            msg = command;
         }
         if (msg) {
             connections.forEach(conn => conn.send(msg));
