@@ -183,7 +183,7 @@ server.on('connection', function(conn) {
                           + "." + toString(date.getMilliseconds(), 3));
         }
         log(dateString, msg);
-        console.log(dateString, msg);
+        // console.log(dateString, msg);
     });
 });
 
