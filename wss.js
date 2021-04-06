@@ -2,30 +2,31 @@
 
 /*global __filename, process, require, Buffer */
 
-var ws = require('ws');
-var fs = require('fs');
-var express = require('express');
-var minimist = require('minimist');
-var fs = require('fs');
-var https = require('https');
-var http = require('http');
+var ws = require("ws");
+var fs = require("fs");
+var express = require("express");
+var minimist = require("minimist");
+var fs = require("fs");
+var https = require("https");
+var http = require("http");
 
 var minimistOptions = {
-    alias: { p: 'port', v: 'verbose', h: 'help', 'c': 'cert', 'k': 'private-key', r: 'relative-time' },
+    alias: { p: "port", v: "verbose", h: "help", "c": "cert", "k": "private-key", r: "relative-time", "R": "auto-response" },
     default: { p: 8888 }
 };
 
 function showHelp(func)
 {
-    var usageString = ('Usage:\n$0 [...options...]\n' +
-                       '  -h|--help              Display help\n' +
-                       '  -v|--verbose           Be verbose\n' +
-                       '  -l|--logfile [file]    Log file\n' +
-                       '  -r|--relative-time     Log with relative times\n' +
-                       '  -c|--cert [file]        Cert (implies wss)\n' +
-                       '  -k|--private-key [file] Private key (implies wss)\n' +
-                       '  -p|--port [port]        Use this port (default ' + minimistOptions.default.p + ')');
-    func(usageString.replace('$0', __filename));
+    var usageString = ("Usage:\n$0 [...options...]\n" +
+                       "  -h|--help               Display help\n" +
+                       "  -v|--verbose            Be verbose\n" +
+                       "  -l|--logfile [file]     Log file\n" +
+                       "  -R|--auto-response      Send a message to new connections\n" +
+                       "  -r|--relative-time      Log with relative times\n" +
+                       "  -c|--cert [file]        Cert (implies wss)\n" +
+                       "  -k|--private-key [file] Private key (implies wss)\n" +
+                       "  -p|--port [port]        Use this port (default " + minimistOptions.default.p + ")");
+    func(usageString.replace("$0", __filename));
 }
 
 var args = minimist(process.argv, minimistOptions);
@@ -44,19 +45,19 @@ var args = minimist(process.argv, minimistOptions);
     }
 
     for (arg in args) {
-        if (arg != '_' && args.hasOwnProperty(arg) && !validArgs[arg]) {
-            console.error('Unrecognized argument ' + arg);
+        if (arg != "_" && args.hasOwnProperty(arg) && !validArgs[arg]) {
+            console.error("Unrecognized argument " + arg);
             showHelp(console.error);
             process.exit(1);
         }
     }
-    if (typeof args.port !== 'number') {
-        console.error('Invalid --port argument');
+    if (typeof args.port !== "number") {
+        console.error("Invalid --port argument");
         showHelp(console.error);
         process.exit(1);
     }
-    if (args.hasOwnProperty('cert') != args.hasOwnProperty('private-key')) {
-        console.error('--cert also requires --private-key and vice versa');
+    if (args.hasOwnProperty("cert") != args.hasOwnProperty("private-key")) {
+        console.error("--cert also requires --private-key and vice versa");
         showHelp(console.error);
         process.exit(1);
     }
@@ -69,7 +70,7 @@ if (args.help) {
 
 var logFile;
 if (args.logfile) {
-    logFile = fs.openSync(args.logfile, 'w');
+    logFile = fs.openSync(args.logfile, "w");
     if (!logFile) {
         console.error("Can't open", args.logFile, "for writing");
         process.exit(1);
@@ -96,8 +97,8 @@ function log()
             }
         }
         if (str) {
-            if (str[str.length - 1] != '\n')
-                str += '\n';
+            if (str[str.length - 1] != "\n")
+                str += "\n";
             var buf = new Buffer(str);
             fs.writeSync(logFile, buf, 0, buf.length);
         }
@@ -112,13 +113,13 @@ function logVerbose()
 
 var webServer;
 if (args.cert) {
-    console.error("SHIT " + args.cert + " " + args['private-key']);
-    var privateKey  = fs.readFileSync(args['private-key'], 'utf8');
-    var certificate = fs.readFileSync(args.cert, 'utf8');
+    console.error("SHIT " + args.cert + " " + args["private-key"]);
+    var privateKey  = fs.readFileSync(args["private-key"], "utf8");
+    var certificate = fs.readFileSync(args.cert, "utf8");
     // console.log(privateKey);
     // console.log(certificate);
     if (!privateKey) {
-        console.error("Can't read " + args['private-key']);
+        console.error("Can't read " + args["private-key"]);
         process.exit(1);
     } else if (!certificate) {
         console.error("Can't read " + args.key);
@@ -142,19 +143,19 @@ logVerbose("Listening on port", args.port);
 
 var start = new Date();
 var connections = [];
-var relativeTime = args['relative-time'];
-server.on('connection', function(conn) {
+var relativeTime = args["relative-time"];
+server.on("connection", function(conn) {
     logVerbose("Got a connection");
     connections.push(conn);
-    conn.on('close', function() {
+    conn.on("close", function() {
         var idx = connections.indexOf(conn);
         logVerbose("Connection closed");
         connections.splice(idx, 1);
     });
-    conn.on('message', function(msg) {
+    conn.on("message", function(msg) {
         try {
             var object = JSON.parse(msg);
-            if (object instanceof Object && object.type === 'evalResponse') {
+            if (object instanceof Object && object.type === "evalResponse") {
                 log("  =>", object.result);
                 return;
             }
@@ -162,9 +163,9 @@ server.on('connection', function(conn) {
         }
         function toString(int, len) {
             var ret = "" + int;
-            var pad = '';
+            var pad = "";
             for (var i=len - ret.length; i>0; --i)
-                pad += '0';
+                pad += "0";
             return pad + ret;
         }
 
@@ -185,14 +186,17 @@ server.on('connection', function(conn) {
         log(dateString, msg);
         // console.log(dateString, msg);
     });
+    if (args["auto-response"]) {
+        conn.send("Welcome!");
+    }
 });
 
-server.on('error', function(err) {
+server.on("error", function(err) {
     console.error("Got error", err);
     process.exit(2);
 });
 
-server.on('close', function(ev) {
+server.on("close", function(ev) {
     console.error("Got closed", ev);
     process.exit(3);
 });
@@ -201,7 +205,7 @@ server.on('close', function(ev) {
 
 function sendCommand(command) {
     if (command) {
-        logVerbose("Sending command", "'" + command + "'");
+        logVerbose("Sending command", "\"" + command + "\"");
         if (!connections.length) {
             log("No connections...");
             return;
