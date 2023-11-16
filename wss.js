@@ -188,6 +188,7 @@ server.on("connection", function(conn) {
     });
     if (args["auto-response"]) {
         conn.send("Welcome!");
+        conn.send(Buffer.from("Welcome!", "utf8"));
     }
 });
 
